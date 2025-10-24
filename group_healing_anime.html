@@ -1,0 +1,432 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Group Healing — Pham hoàng hai & Friends (Anime Style)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root{
+      --bg:#071024;
+      --card:#061123;
+      --muted:#9fb1c8;
+      --glass: rgba(255,255,255,0.03);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: radial-gradient(800px 400px at 10% 10%, rgba(140,180,255,0.03), transparent 10%), linear-gradient(180deg,#041025,#071024 60%);
+      color:#e8f7ff;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+
+    .container{
+      width:1100px;
+      max-width:100%;
+      border-radius:16px;
+      padding:18px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border:1px solid rgba(255,255,255,0.03);
+      box-shadow: 0 20px 60px rgba(2,6,23,0.7);
+    }
+
+    header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+    header h1{margin:0;font-size:20px}
+    header p{margin:0;color:var(--muted);font-size:13px}
+
+    .stage{
+      margin-top:16px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.03));
+      border-radius:12px;
+      padding:16px;
+      position:relative;
+      overflow:hidden;
+    }
+
+    /* ground */
+    .ground{
+      height:80px;background:linear-gradient(180deg,#021423,#041a2a);border-radius:8px;margin-top:12px;
+      position:relative;overflow:visible;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+    }
+
+    /* roster layout: 5 front, 5 back around central Pham hoàng hai */
+    .chars{
+      display:flex;
+      align-items:flex-end;
+      justify-content:center;
+      gap:8px;
+      position:relative;
+      padding:12px 6px;
+      flex-wrap:wrap;
+    }
+
+    .char{
+      width:110px;
+      height:210px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));
+      border-radius:12px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-direction:column;
+      padding:8px;
+      position:relative;
+      transition:transform .28s ease;
+    }
+    .char:hover{transform:translateY(-6px) scale(1.02)}
+
+    /* anime head + body */
+    .avatar{
+      width:86px;height:110px;position:relative;
+      display:flex;align-items:center;justify-content:center;
+    }
+    svg.anime{width:86px;height:110px;display:block}
+
+    .label{font-size:12px;color:var(--muted);margin-top:8px;text-align:center;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+    /* glow under each character */
+    .aura{
+      position:absolute;left:50%;transform:translateX(-50%);
+      bottom:66px;width:70px;height:34px;border-radius:40px;filter:blur(10px);opacity:0.9;mix-blend-mode:screen;
+    }
+
+    /* central Pham hoang hai larger */
+    .center{
+      width:150px;height:260px;
+      margin:0 12px;
+      display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+    }
+    .center .avatar{width:120px;height:160px}
+    .center .label{font-weight:700;color:#fff;margin-top:10px;font-size:13px}
+
+    /* particle */
+    .particle{position:absolute;width:8px;height:8px;border-radius:50%;pointer-events:none;mix-blend-mode:screen;box-shadow:0 0 12px rgba(255,255,255,0.6)}
+
+    /* controls */
+    .controls{display:flex;gap:10px;align-items:center;margin-top:12px}
+    button{background:linear-gradient(90deg,#7bf3c6,#8ac8ff);border:none;padding:10px 14px;border-radius:10px;color:#042a1f;font-weight:600;cursor:pointer}
+    button.secondary{background:transparent;border:1px solid rgba(138,200,255,0.12);color:var(--muted)}
+
+    .status{margin-left:8px;color:var(--muted);font-size:13px}
+
+    footer{margin-top:10px;text-align:center;color:var(--muted);font-size:12px}
+
+    /* responsive */
+    @media (max-width:1120px){
+      .chars{gap:6px}
+      .char{width:92px}
+    }
+    @media (max-width:760px){
+      .chars{gap:6px;flex-wrap:wrap}
+      .center{order:2;margin-top:6px}
+    }
+  </style>
+</head>
+<body>
+  <div class="container" role="main">
+    <header>
+      <div>
+        <h1>Group Healing — Anime Style</h1>
+        <p>Pham hoàng hai and friends gather to soothe battle wounds with anime-style magic.</p>
+      </div>
+      <div class="controls" aria-hidden="false">
+        <button id="groupHeal">Start Group Healing</button>
+        <button id="cheer" class="secondary">Cheer</button>
+        <div class="status" id="status">Ready.</div>
+      </div>
+    </header>
+
+    <div class="stage" id="stageArea" aria-live="polite">
+      <div class="chars" id="charsRow">
+        <!-- We'll inject characters here via JS -->
+      </div>
+
+      <div class="ground" id="ground">
+        <!-- particles appended here -->
+      </div>
+    </div>
+
+    <footer>All characters animated in a playful, non-explicit anime style.</footer>
+  </div>
+
+<script>
+(() => {
+  // character definitions: name, color (magic aura), role position (front/back), short title
+  const characters = [
+    {id:'pham', name:'Phạm Hoàng Hải', color:'#7ef9a6', center:true, title:'Healer (main)'},
+    {id:'bui_huyen_mai', name:'Bùi Huyền Mai', color:'#ff9ac2', title:'Support'},
+    {id:'duc_viet_bui', name:'Đức Việt Bùi', color:'#ffd36a', title:'Buffer'},
+    {id:'trinh_ngoc_hung', name:'Trịnh Ngọc Hưng', color:'#9bd0ff', title:'Caster'},
+    {id:'tran_duc_manh', name:'Trần Đức Mạnh', color:'#b3a0ff', title:'Guardian'},
+    {id:'nguyen_khanh_bang', name:'Nguyễn Khánh Bằng', color:'#8cffb1', title:'Analyst'},
+    {id:'aryan_panicker', name:'Aryan Panicker', color:'#ffc6a6', title:'Swift'},
+    {id:'ta_thu_hau', name:'Tạ Thu Hậu', color:'#c8fffb', title:'Healer'},
+    {id:'aittaty', name:'Aittaty Kyzybek', color:'#ffb3f5', title:'Spirit'},
+    {id:'ali_akram', name:'Ali Akram', color:'#ffd6b8', title:'Protector'}
+  ];
+
+  const charsRow = document.getElementById('charsRow');
+  const ground = document.getElementById('ground');
+  const status = document.getElementById('status');
+
+  // helper to create an anime-style avatar SVG for each character
+  function createAvatarSVG(id, color){
+    const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('class','anime');
+    svg.setAttribute('viewBox','0 0 120 160');
+    svg.innerHTML = `
+      <defs>
+        <linearGradient id="${id}_skin" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stop-color="#ffdcb8"/>
+          <stop offset="1" stop-color="#ffcaa0"/>
+        </linearGradient>
+        <filter id="${id}_shadow" x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000" flood-opacity="0.18"/>
+        </filter>
+      </defs>
+      <!-- head -->
+      <g transform="translate(10,6)">
+        <ellipse cx="50" cy="30" rx="28" ry="26" fill="url(#${id}_skin)"/>
+        <!-- anime eyes -->
+        <g transform="translate(0,0)">
+          <path d="M34 32 q6 8 16 0" stroke="#111827" stroke-width="2" fill="none" stroke-linecap="round" />
+          <path d="M70 32 q-6 8 -16 0" stroke="#111827" stroke-width="2" fill="none" stroke-linecap="round" />
+          <circle cx="42" cy="28" r="3" fill="#fff" />
+          <circle cx="58" cy="28" r="3" fill="#fff" />
+        </g>
+        <!-- hair (stylized anime tuft) -->
+        <path d="M26 20 q20 -26 56 -6 q-6 -4 -44 -4 q-4 2 -12 10z" fill="#1f2937" />
+        <!-- small blush -->
+        <ellipse cx="36" cy="36" rx="4" ry="2.4" fill="#ffb6c1" opacity="0.6"/>
+        <ellipse cx="64" cy="36" rx="4" ry="2.4" fill="#ffb6c1" opacity="0.6"/>
+      </g>
+      <!-- body & cloak -->
+      <g transform="translate(20,62)">
+        <rect x="12" y="8" rx="8" ry="8" width="56" height="60" fill="#172033" />
+        <path d="M8 12 q36 28 96 0 q-26 36 -96 0" fill="${color}" opacity="0.08" />
+      </g>
+      <!-- hand/gesture -->
+      <g transform="translate(12,90)">
+        <path d="M12 6 q10 -10 24 0" stroke="#ffdcb8" stroke-width="4" stroke-linecap="round" fill="none"/>
+      </g>
+    `;
+    return svg;
+  }
+
+  // create character cards
+  characters.forEach((ch, idx) => {
+    if(ch.center){
+      // center larger card for Pham
+      const cwrap = document.createElement('div');
+      cwrap.className = 'center';
+      cwrap.id = 'card_' + ch.id;
+      const avatarWrap = document.createElement('div');
+      avatarWrap.className = 'avatar';
+      const svg = createAvatarSVG(ch.id, ch.color);
+      avatarWrap.appendChild(svg);
+
+      // aura glow layer
+      const aura = document.createElement('div');
+      aura.className = 'aura';
+      aura.style.width = '120px';
+      aura.style.height = '56px';
+      aura.style.background = `radial-gradient(circle at 40% 30%, ${ch.color}, rgba(255,255,255,0.02) 40%, transparent 70%)`;
+      aura.style.opacity = '0.95';
+      cwrap.appendChild(aura);
+
+      const label = document.createElement('div'); label.className='label centerLabel';
+      label.innerHTML = `<div style="font-weight:700">${ch.name}</div><div style="font-size:11px;color:var(--muted)">${ch.title}</div>`;
+
+      cwrap.appendChild(avatarWrap);
+      cwrap.appendChild(label);
+      charsRow.appendChild(cwrap);
+    } else {
+      const card = document.createElement('div');
+      card.className = 'char';
+      card.id = 'card_' + ch.id;
+      const avatarWrap = document.createElement('div'); avatarWrap.className='avatar';
+      const svg = createAvatarSVG(ch.id, ch.color);
+      avatarWrap.appendChild(svg);
+
+      // aura
+      const aura = document.createElement('div');
+      aura.className = 'aura';
+      aura.style.background = `radial-gradient(circle at 40% 30%, ${ch.color}, rgba(255,255,255,0.02) 40%, transparent 70%)`;
+      aura.style.width = '70px';
+      aura.style.height = '32px';
+      aura.style.bottom = '66px';
+
+      const label = document.createElement('div'); label.className='label';
+      label.textContent = ch.name;
+
+      card.appendChild(aura);
+      card.appendChild(avatarWrap);
+      card.appendChild(label);
+      charsRow.appendChild(card);
+    }
+  });
+
+  // simple idle animation: small vertical bob + aura pulse per character
+  function startIdleAnim(){
+    const all = document.querySelectorAll('.char, .center');
+    all.forEach((el, i) => {
+      const delay = Math.random()*800;
+      el.animate([
+        { transform: 'translateY(0)' },
+        { transform: 'translateY(-6px)' },
+        { transform: 'translateY(0)' }
+      ], { duration: 3000 + Math.random()*1600, iterations: Infinity, delay });
+      // aura pulse
+      const aura = el.querySelector('.aura');
+      if(aura){
+        aura.animate([
+          { transform:'translateY(0) scale(0.96)', opacity:0.9 },
+          { transform:'translateY(-4px) scale(1.05)', opacity:1 },
+          { transform:'translateY(0) scale(0.96)', opacity:0.9 }
+        ], { duration: 2200 + Math.random()*1200, iterations: Infinity, delay: delay/2 });
+      }
+    });
+  }
+
+  startIdleAnim();
+
+  // particle engine for group healing
+  function createParticle(x,y,color,life,scale){
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = x + 'px';
+    p.style.top = y + 'px';
+    p.style.background = color;
+    p.style.width = (8*scale) + 'px';
+    p.style.height = (8*scale) + 'px';
+    ground.appendChild(p);
+    // animate movement upwards and fading
+    const dx = (Math.random()*40-20);
+    const dy = - (60 + Math.random()*80);
+    const frames = 40 + Math.floor(Math.random()*40);
+    let frame=0;
+    const id = setInterval(()=>{
+      frame++;
+      const t = frame/frames;
+      p.style.left = (x + dx * t) + 'px';
+      p.style.top = (y + dy * t + Math.sin(t*6)*8) + 'px';
+      p.style.opacity = String(Math.max(0, 1 - t));
+      p.style.transform = `scale(${1 - 0.4*t})`;
+      if(frame>=frames){
+        clearInterval(id);
+        p.remove();
+      }
+    }, 16);
+  }
+
+  // helper to get center coords of a character card for particle origin
+  function cardCenter(el){
+    const rect = el.getBoundingClientRect();
+    const parentRect = ground.getBoundingClientRect();
+    return { x: rect.left + rect.width/2 - parentRect.left, y: rect.top + rect.height*0.28 - parentRect.top };
+  }
+
+  // group heal: each character emits a beam/particle towards Pham then final burst
+  const groupHealBtn = document.getElementById('groupHeal');
+  const cheerBtn = document.getElementById('cheer');
+
+  function playTone(freq, dur){
+    try{
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.value = freq;
+      g.gain.value = 0.001;
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.start();
+      g.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur/1000);
+      o.stop(ctx.currentTime + dur/1000 + 0.02);
+    }catch(e){}
+  }
+
+  function groupHeal(){
+    status.textContent = 'Group healing… magical energy flows!';
+    const phamCard = document.getElementById('card_pham');
+    const phamCenter = cardCenter(phamCard);
+    // emit from each other character toward pham
+    characters.forEach(ch => {
+      if(ch.id === 'pham') return;
+      const card = document.getElementById('card_' + ch.id);
+      const pos = cardCenter(card);
+      // draw a short directional stream: emit multiple particles along curve
+      const steps = 8 + Math.floor(Math.random()*6);
+      for(let s=0;s<steps;s++){
+        setTimeout(()=>{
+          // compute intermediate point between pos and phamCenter with slight arc
+          const t = s/steps;
+          const ix = pos.x + (phamCenter.x - pos.x) * t + Math.sin(t*3 + Math.random()*2)*12;
+          const iy = pos.y + (phamCenter.y - pos.y) * t + Math.cos(t*2 + Math.random()*2)*8;
+          createParticle(ix, iy, ch.color, 1000, 1 - 0.2*Math.random());
+        }, s*40 + Math.random()*60);
+      }
+      // small local sparkle at source
+      for(let k=0;k<6;k++){
+        setTimeout(()=>{
+          createParticle(pos.x + (Math.random()*30-15), pos.y + (Math.random()*20-10), ch.color, 900 + Math.random()*600, 0.6 + Math.random()*0.8);
+        }, k*80 + Math.random()*120);
+      }
+    });
+
+    // finale after a delay
+    setTimeout(()=>{
+      // big burst around Pham
+      for(let i=0;i<60;i++){
+        setTimeout(()=>{
+          const angle = Math.random()*Math.PI*2;
+          const r = 10 + Math.random()*60;
+          const x = phamCenter.x + Math.cos(angle)*r;
+          const y = phamCenter.y + Math.sin(angle)*r + (Math.random()*10-6);
+          const col = characters[Math.floor(Math.random()*characters.length)].color;
+          createParticle(x,y,col,1000+Math.random()*600,0.8 + Math.random()*1.0);
+        }, i*6);
+      }
+      playTone(660,400);
+      status.textContent = 'Healing complete — everyone smiles!';
+      setTimeout(()=>{ status.textContent = 'Ready.'; }, 2200);
+    }, 1400);
+
+  }
+
+  groupHealBtn.addEventListener('click', groupHeal);
+  cheerBtn.addEventListener('click', ()=>{
+    status.textContent = 'They cheer — a flurry of tiny sparkles!';
+    characters.forEach(ch => {
+      if(ch.id === 'pham') return;
+      const card = document.getElementById('card_' + ch.id);
+      const pos = cardCenter(card);
+      for(let i=0;i<12;i++){
+        setTimeout(()=> createParticle(pos.x + (Math.random()*40-20), pos.y + (Math.random()*26-10), ch.color, 800 + Math.random()*400, 0.6+Math.random()*0.6), i*40);
+      }
+    });
+    playTone(520,220);
+    setTimeout(()=> status.textContent='Ready.', 900);
+  });
+
+  // ensure ground has correct size and is positioned
+  function updateGroundSize(){ 
+    ground.style.height = Math.max(120, window.innerHeight*0.12) + 'px';
+  }
+  updateGroundSize();
+  window.addEventListener('resize', updateGroundSize);
+
+  // initial readiness
+  status.textContent = 'Ready — click "Start Group Healing" to begin.';
+
+})(); 
+</script>
+</body>
+</html>
